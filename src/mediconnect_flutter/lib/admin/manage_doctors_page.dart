@@ -1,0 +1,506 @@
+import 'package:flutter/material.dart';
+import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
+import 'package:mediconnect/models/DoctorModel.dart';
+import 'package:mediconnect/models/SpecializationModel.dart';
+import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/admin/edit_doctor_management_page.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:mediconnect/constants/api_constants.dart';
+
+class ManageDoctorsPage extends StatefulWidget {
+  const ManageDoctorsPage({super.key});
+
+  @override
+  State<ManageDoctorsPage> createState() => _ManageDoctorsPageState();
+}
+
+class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
+  final ApiService _apiService = ApiService();
+  final TextEditingController _searchController = TextEditingController();
+  
+  List<DoctorModel> _allDoctors = [];
+  List<DoctorModel> _filteredDoctors = [];
+  List<SpecializationModel> _specializations = [];
+  
+  String _selectedSpec = "All";
+  String _searchQuery = "";
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+    try {
+      final specs = await _apiService.getAllSpecializations();
+      setState(() {
+        _specializations = specs;
+      });
+      await _fetchDoctors();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading data: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchDoctors() async {
+    setState(() => _isLoading = true);
+    try {
+      final doctors = await _apiService.getAllDoctorsForAdmin();
+      setState(() {
+        if (_selectedSpec == "All") {
+          _allDoctors = doctors;
+        } else {
+          _allDoctors = doctors.where((doc) => doc.specializationName.trim().toLowerCase() == _selectedSpec.trim().toLowerCase()).toList();
+        }
+        _applySearch();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error fetching doctors: $e")),
+        );
+      }
+    }
+  }
+
+  void _applySearch() {
+    setState(() {
+      if (_searchQuery.isEmpty) {
+        _filteredDoctors = _allDoctors;
+      } else {
+        _filteredDoctors = _allDoctors.where((doctor) {
+          final fullName = "${doctor.firstName} ${doctor.lastName}".toLowerCase();
+          return fullName.contains(_searchQuery.toLowerCase());
+        }).toList();
+      }
+    });
+  }
+
+  Future<void> _confirmDelete(DoctorModel doctor) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 50),
+            ),
+            const SizedBox(height: 15),
+            const Text(
+              "Deactivate Doctor",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF263238)),
+            ),
+          ],
+        ),
+        content: Text(
+          "Are you sure you want to deactivate Dr. ${doctor.firstName} ${doctor.lastName}?\nThey will be set to inactive.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.subText, fontSize: 14),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 25),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    side: BorderSide(color: context.dividerCol),
+                  ),
+                  child: Text(
+                    "CANCEL",
+                    style: TextStyle(color: context.subText, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text(
+                    "DEACTIVATE",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _deleteDoctor(doctor.id);
+    }
+  }
+
+  Future<void> _deleteDoctor(String id) async {
+    setState(() => _isLoading = true);
+    try {
+      final success = await _apiService.inactivateDoctor(id);
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Doctor deactivated successfully")),
+          );
+          _fetchDoctors();
+        }
+      }
+    } catch (e) {
+      debugPrint("DEACTIVATE DOCTOR ERROR: $e"); // Printing to console
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()), 
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _activateDoctor(String id) async {
+    setState(() => _isLoading = true);
+    try {
+      final success = await _apiService.activateDoctor(id);
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Doctor activated successfully"), backgroundColor: Colors.green),
+          );
+          _fetchDoctors();
+        }
+      }
+    } catch (e) {
+      debugPrint("ACTIVATE DOCTOR ERROR: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.scaffoldBg,
+      appBar: CommonAppBar(
+        title: "Manage Doctors",
+        showBackButton: true,
+        onRefresh: _fetchDoctors,
+      ),
+      body: Column(
+        children: [
+          const SizedBox(height: 15),
+          _buildSearchBar(),
+          const SizedBox(height: 15),
+          _buildFilterBar(),
+          const SizedBox(height: 10),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: primaryColor))
+                : RefreshIndicator(
+                    onRefresh: _fetchDoctors,
+                    child: _filteredDoctors.isEmpty
+                        ? const Center(child: Text("No doctors found"))
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            itemCount: _filteredDoctors.length,
+                            itemBuilder: (context, index) {
+                              final doctor = _filteredDoctors[index];
+                              return _buildDoctorCard(doctor);
+                            },
+                          ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+            _applySearch();
+          });
+        },
+        decoration: InputDecoration(
+          hintText: "Search doctor...",
+          prefixIcon: const Icon(Icons.search, color: primaryColor),
+          suffixIcon: _searchQuery.isNotEmpty 
+              ? IconButton(
+                  icon: const Icon(Icons.clear), 
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = "";
+                      _applySearch();
+                    });
+                  }) 
+              : null,
+          filled: true,
+          fillColor: context.inputFill,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return SizedBox(
+      height: 45,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _specializations.length + 1,
+        itemBuilder: (context, index) {
+          String name = index == 0 ? "All" : _specializations[index - 1].name;
+          bool isSelected = _selectedSpec == name;
+
+          return GestureDetector(
+            onTap: () {
+              if (_selectedSpec != name) {
+                setState(() => _selectedSpec = name);
+                _fetchDoctors();
+              }
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: isSelected ? primaryColor : context.filterChipBg,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: isSelected ? primaryColor : context.filterChipBorder),
+              ),
+              child: Center(
+                child: Text(
+                  name,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : context.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDoctorCard(DoctorModel doctor) {
+    String? fullImageUrl;
+    if (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty) {
+      fullImageUrl = doctor.profilePictureUrl!.startsWith('http') 
+          ? doctor.profilePictureUrl 
+          : "${ApiConstants.serverUrl}${doctor.profilePictureUrl}";
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: primaryColor.withOpacity(0.1), width: 1),
+            ),
+            child: CircleAvatar(
+              radius: 28,
+              backgroundColor: primaryColor.withOpacity(0.1),
+              backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+              child: fullImageUrl == null
+                  ? const Icon(Icons.person, size: 32, color: primaryColor)
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "Dr. ${doctor.firstName} ${doctor.lastName}",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: context.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: doctor.isAppleToAppointment 
+                            ? Colors.green.withOpacity(0.1) 
+                            : Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        doctor.isAppleToAppointment ? "Active" : "Inactive",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: doctor.isAppleToAppointment ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  doctor.specializationName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: context.subText,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.history_edu, color: primaryColor, size: 16),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        "${doctor.experienceYears} Years Exp.",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: context.onSurface,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditDoctorManagementPage(doctorId: doctor.id),
+                    ),
+                  );
+                  if (result == true) _fetchDoctors();
+                },
+                icon: const Icon(Icons.edit, color: primaryColor, size: 20),
+                style: IconButton.styleFrom(
+                  backgroundColor: primaryColor.withOpacity(0.1),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  minimumSize: const Size(36, 36),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              const SizedBox(height: 8),
+              doctor.isAppleToAppointment
+                  ? IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _confirmDelete(doctor),
+                      icon: const Icon(Icons.block, color: Colors.red, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.red.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        minimumSize: const Size(36, 36),
+                        padding: EdgeInsets.zero,
+                      ),
+                    )
+                  : IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _activateDoctor(doctor.id),
+                      icon: const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.green.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        minimumSize: const Size(36, 36),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

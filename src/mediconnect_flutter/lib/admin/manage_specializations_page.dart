@@ -1,0 +1,252 @@
+import 'package:flutter/material.dart';
+import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
+import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/models/SpecializationModel.dart';
+import 'package:mediconnect/models/CreateSpecializationModel.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
+
+class ManageSpecializationsPage extends StatefulWidget {
+  const ManageSpecializationsPage({super.key});
+
+  @override
+  State<ManageSpecializationsPage> createState() => _ManageSpecializationsPageState();
+}
+
+class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
+  final ApiService _apiService = ApiService();
+  bool _isLoading = true;
+  List<SpecializationModel> _specializations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSpecializations();
+  }
+
+  Future<void> _fetchSpecializations() async {
+    setState(() => _isLoading = true);
+    try {
+      final specs = await _apiService.getAllSpecializations();
+      setState(() {
+        _specializations = specs;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error fetching specializations: $e")),
+        );
+      }
+    }
+  }
+
+  void _showAddEditDialog({SpecializationModel? spec}) {
+    final nameController = TextEditingController(text: spec?.name ?? "");
+    final descriptionController = TextEditingController(text: spec?.description ?? "");
+    final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            spec == null ? "Add Specialization" : "Edit Specialization",
+            style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: "Name",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.category_rounded),
+                  ),
+                  validator: (val) => val == null || val.isEmpty ? "Required" : null,
+                ),
+                const SizedBox(height: 15),
+                TextFormField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    labelText: "Description",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.description_rounded),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(context),
+              child: Text("Cancel", style: TextStyle(color: context.subText)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isSaving ? null : () async {
+                if (formKey.currentState!.validate()) {
+                  setDialogState(() => isSaving = true);
+                  
+                  final createModel = CreateSpecializationModel(
+                    name: nameController.text,
+                    description: descriptionController.text,
+                  );
+                  
+                  try {
+                    bool success;
+                    if (spec == null) {
+                      success = await _apiService.createSpecialization(createModel);
+                    } else {
+                      success = await _apiService.updateSpecialization(spec.id, createModel);
+                    }
+
+                    if (mounted) {
+                      Navigator.pop(context);
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(spec == null ? "Created successfully" : "Updated successfully"),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        _fetchSpecializations();
+                      }
+                    }
+                  } catch (e) {
+                    setDialogState(() => isSaving = false);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Error: $e"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+              child: isSaving 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text("Save"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.scaffoldBg,
+      appBar: CommonAppBar(
+        pageName: "Specializations",
+        showBackButton: true,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddEditDialog(),
+        backgroundColor: primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _fetchSpecializations,
+        color: primaryColor,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: primaryColor))
+            : _specializations.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                      Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.category_outlined, size: 60, color: context.subText.withValues(alpha: 0.5)),
+                            const SizedBox(height: 10),
+                            Text("No specializations found", style: TextStyle(color: context.subText)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(20),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: _specializations.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 15),
+                    itemBuilder: (context, index) {
+                      final spec = _specializations[index];
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: context.cardBg,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: const Icon(Icons.category_rounded, color: primaryColor, size: 28),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    spec.name,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17,
+                                      color: context.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    spec.description,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: context.subText,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.edit_rounded, color: context.subText),
+                              onPressed: () => _showAddEditDialog(spec: spec),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+      ),
+    );
+  }
+}
