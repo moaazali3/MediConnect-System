@@ -65,12 +65,12 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
         showBackButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            icon: Icon(Icons.calendar_month, color: Theme.of(context).colorScheme.primary),
             onPressed: () => _selectDate(context),
           ),
           if (_selectedDate != null)
             IconButton(
-              icon: const Icon(Icons.clear, color: Colors.white),
+              icon: Icon(Icons.clear, color: Theme.of(context).colorScheme.primary),
               onPressed: () => setState(() => _selectedDate = null),
             ),
         ],

@@ -72,12 +72,12 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
         showBackButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month, color: primaryColor),
+            icon: Icon(Icons.calendar_month, color: Theme.of(context).colorScheme.primary),
             onPressed: () => _selectDate(context),
           ),
           if (_hasUserSelectedDate)
             IconButton(
-              icon: const Icon(Icons.today, color: primaryColor),
+              icon: Icon(Icons.today, color: Theme.of(context).colorScheme.primary),
               onPressed: () {
                 setState(() {
                   _selectedDate = DateTime.now();
