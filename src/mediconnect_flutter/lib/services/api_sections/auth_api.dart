@@ -22,15 +22,15 @@ mixin AuthApi {
         Uri.parse('${parent.baseUrl}/Auth/Register'),
         headers: parent._headers,
         body: jsonEncode({
-          "firstName": firstName,
-          "lastName": lastName,
-          "email": email,
+          "firstName": firstName.trim(),
+          "lastName": lastName.trim(),
+          "email": email.trim(),
           "password": password,
-          "phoneNumber": phone,
-          "emergencyContact": emergencyContact,
+          "phoneNumber": phone.trim(),
+          "emergencyContact": emergencyContact.trim(),
           "gender": gender,
           "dateOfBirth": formattedDate,
-          "address": address,
+          "address": address.trim(),
           "bloodType": bloodType,
           "height": height,
           "weight": weight
@@ -106,7 +106,7 @@ mixin AuthApi {
         Uri.parse('${parent.baseUrl}/Auth/Login'),
         headers: parent._headers,
         body: jsonEncode({
-          'email': email,
+          'email': email.trim(),
           'password': password,
         }),
       );
@@ -158,8 +158,11 @@ mixin AuthApi {
       }
 
       final response = await http.post(
-        Uri.parse('${parent.baseUrl}/Auth/RefreshToken?refreshToken=$currentRefreshToken'),
-        headers: parent._headers,
+        Uri.parse('${parent.baseUrl}/Auth/RefreshToken?refreshToken=${Uri.encodeComponent(currentRefreshToken)}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }, // Don't send the expired access token here
       );
 
       dynamic body;

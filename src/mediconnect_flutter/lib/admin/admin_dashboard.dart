@@ -217,8 +217,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         "Specialties",
         "Manage list",
         Icons.category_rounded,
-        Colors.amber.shade700,
+        const Color(0xFF1A2340),
             () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageSpecializationsPage())),
+        iconColor: const Color(0xFF3B7DFF),
+        iconBgSolid: true,
       ),
     ];
 
@@ -249,8 +251,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Column(children: rows);
   }
 
-  Widget _buildActionCard(BuildContext context, String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionCard(BuildContext context, String title, String subtitle, IconData icon, Color color, VoidCallback onTap, {Color? iconColor, bool iconBgSolid = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveIconColor = iconColor ?? color;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -273,12 +276,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: iconBgSolid ? color : color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: effectiveIconColor, size: 24),
             ),
             const SizedBox(height: 12),
             FittedBox(
