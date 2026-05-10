@@ -26,15 +26,30 @@ void main() async {
   Widget homeWidget = const LoginScreen();
 
   if (token != null && role != null && userId != null) {
-    final String lowerRole = role.toLowerCase();
-    if (lowerRole == "admin") {
-      homeWidget = const AdminDashboard();
-    } else if (lowerRole == "doctor") {
-      homeWidget = DoctorHomeScreen(userId: userId);
-    } else if (lowerRole == "receptionist") {
-      homeWidget = const ReceptionistDashboard();
+    // ── Validate the token by attempting a refresh ──
+    // If the refresh token is also expired, we clear everything and send the
+    // user to the login screen rather than letting them reach a dashboard with
+    // an invalid session.
+    final refreshResult = await ApiService().refreshToken();
+
+    if (refreshResult.success) {
+      // Token renewed — route to the correct dashboard
+      final String lowerRole = role.toLowerCase();
+      if (lowerRole == "admin") {
+        homeWidget = const AdminDashboard();
+      } else if (lowerRole == "doctor") {
+        homeWidget = DoctorHomeScreen(userId: userId);
+      } else if (lowerRole == "receptionist") {
+        homeWidget = const ReceptionistDashboard();
+      } else {
+        homeWidget = HomeScreen(userId: userId, userRole: role);
+      }
     } else {
-      homeWidget = HomeScreen(userId: userId, userRole: role);
+      // Token expired and refresh failed — wipe session and go to Login
+      await SecureStorage.deleteAllData();
+      ApiService.setToken(null);
+      await prefs.clear();
+      homeWidget = const LoginScreen();
     }
   }
 
