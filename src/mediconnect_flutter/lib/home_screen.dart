@@ -77,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
         pageName: pageName,
         userName: userName ?? "Loading...",
         onLogout: _signOut,
+        isRoot: true,
       ),
       body: IndexedStack(
         index: currentIndex,

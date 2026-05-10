@@ -124,13 +124,14 @@ mixin AuthApi {
         // Save tokens in secure storage
         if (body is Map && body.containsKey('token')) {
           await SecureStorage.writeData(key: 'auth_token', value: body['token']);
-          
-          // Only save refresh token if rememberMe is true
-          if (rememberMe && body.containsKey('refreshToken')) {
+
+          // Always save the refresh token so token renewal works
+          if (body.containsKey('refreshToken')) {
             await SecureStorage.writeData(key: 'refresh_token', value: body['refreshToken']);
-          } else {
-            await SecureStorage.deleteData(key: 'refresh_token');
           }
+
+          // Set the token in-memory so all requests use it and the auto-refresh timer starts
+          ApiService.setToken(body['token']);
         }
         return ApiResponse(success: true, message: "Login Successful", data: body);
       } else {
@@ -157,12 +158,13 @@ mixin AuthApi {
         return ApiResponse(success: false, message: "No refresh token found");
       }
 
+      final url = '${parent.baseUrl}/Auth/RefreshToken?refreshToken=${Uri.encodeComponent(currentRefreshToken)}';
       final response = await http.post(
-        Uri.parse('${parent.baseUrl}/Auth/RefreshToken?refreshToken=${Uri.encodeComponent(currentRefreshToken)}'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true',
-        }, // Don't send the expired access token here
+        },
       );
 
       dynamic body;
@@ -177,7 +179,6 @@ mixin AuthApi {
       if (response.statusCode == 200) {
         if (body is Map && body.containsKey('token')) {
           await SecureStorage.writeData(key: 'auth_token', value: body['token']);
-          // Update refresh token if a new one is provided
           if (body.containsKey('refreshToken')) {
             await SecureStorage.writeData(key: 'refresh_token', value: body['refreshToken']);
           }
@@ -185,7 +186,7 @@ mixin AuthApi {
         }
         return ApiResponse(success: true, message: "Token refreshed", data: body);
       } else {
-        return ApiResponse(success: false, message: "Failed to refresh token");
+        return ApiResponse(success: false, message: "Failed to refresh token (status: ${response.statusCode})");
       }
     } catch (e) {
       return ApiResponse(success: false, message: parent.handleError(e));

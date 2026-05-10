@@ -77,6 +77,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         userName: _adminName,
         onLogout: _signOut,
         onRefresh: _handleRefresh,
+        isRoot: true,
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),

@@ -96,6 +96,7 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
         pageName: pageTitle,
         userName: _receptionistName,
         onLogout: _signOut,
+        isRoot: true,
       ),
       body: IndexedStack(
         index: _currentIndex,
