@@ -76,10 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: currentIndex == 2 ? null : CommonAppBar(
         pageName: pageName,
         userName: userName ?? "Loading...",
-        onRefresh: () => setState(() { _loadUserName(); }),
         onLogout: _signOut,
       ),
-      body: pages[currentIndex],
+      body: IndexedStack(
+        index: currentIndex,
+        children: pages,
+      ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),
         decoration: BoxDecoration(
