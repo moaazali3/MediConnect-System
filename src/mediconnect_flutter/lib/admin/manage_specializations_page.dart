@@ -5,6 +5,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/CreateSpecializationModel.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ManageSpecializationsPage extends StatefulWidget {
   const ManageSpecializationsPage({super.key});
@@ -205,7 +206,87 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
         onRefresh: _fetchSpecializations,
         color: primaryColor,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: primaryColor))
+            ? Skeletonizer(
+                enabled: true,
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 90),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: 5,
+                  separatorBuilder: (context, index) => const SizedBox(height: 15),
+                  itemBuilder: (context, index) {
+                    final dummySpec = SpecializationModel(
+                      id: 0,
+                      name: "Loading Name",
+                      description: "Loading description text...",
+                    );
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: context.cardBg,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: const Icon(Icons.category_rounded, color: primaryColor, size: 28),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  dummySpec.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                    color: context.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  dummySpec.description,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: context.subText,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.edit_rounded, color: context.subText),
+                                onPressed: () {},
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                                onPressed: () {},
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              )
             : _specializations.isEmpty
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),

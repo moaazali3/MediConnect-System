@@ -7,6 +7,7 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/patient/screens/profile.dart';
 import 'package:intl/intl.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class DoctorAppointmentsPage extends StatefulWidget {
   final String? doctorId;
@@ -353,7 +354,29 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                   const SizedBox(height: 10),
 
                   if (_isLoading)
-                    const Center(child: Padding(padding: EdgeInsets.all(40.0), child: CircularProgressIndicator(color: primaryColor)))
+                    Skeletonizer(
+                      enabled: true,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: List.generate(4, (index) => _buildAppointmentCard(
+                            DoctorAppointmentModel(
+                              appointmentId: "dummy",
+                              doctorId: "dummy",
+                              patientId: "dummy",
+                              patientName: "Loading Patient Name",
+                              appointmentDate: "2024-01-01",
+                              startTime: "10:00",
+                              endTime: "10:30",
+                              status: "pending",
+                              dayOfWeek: "Monday",
+                              queueNumber: 1,
+                            ),
+                            isSmallScreen,
+                          )),
+                        ),
+                      ),
+                    )
                   else if (apps.isEmpty)
                     Center(child: Padding(padding: const EdgeInsets.all(40.0), child: Text("No records available.", style: TextStyle(color: context.subText))))
                   else
@@ -506,42 +529,21 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: Column(
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 10,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.access_time_rounded, size: 14, color: Colors.green),
-                        const SizedBox(width: 4),
-                        Text("${app.startTime} - ${app.endTime}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
-                      ],
-                    ),
-                    Text("Q No: ${app.queueNumber}", style: TextStyle(color: context.subText, fontWeight: FontWeight.bold, fontSize: 11)),
-                  ],
+            child: SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton.icon(
+                onPressed: _isProcessing ? null : () => _fetchAndEditRecord(app),
+                icon: const Icon(Icons.history_edu_rounded, size: 16),
+                label: const Text("Medical Record", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.cardBg,
+                  foregroundColor: primaryColor,
+                  side: const BorderSide(color: primaryColor, width: 1),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 38,
-                  child: ElevatedButton.icon(
-                    onPressed: _isProcessing ? null : () => _fetchAndEditRecord(app),
-                    icon: const Icon(Icons.history_edu_rounded, size: 16),
-                    label: const Text("Medical Record", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.cardBg,
-                      foregroundColor: primaryColor,
-                      side: const BorderSide(color: primaryColor, width: 1),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],

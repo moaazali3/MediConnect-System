@@ -6,6 +6,7 @@ import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class DoctorProfileViewScreen extends StatefulWidget {
   final String doctorId;
@@ -68,7 +69,58 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
       future: _fetchDoctorAndReceptionist(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator(color: primaryColor)));
+          final dummyDoctor = DoctorFullModel(
+            id: "dummy",
+            firstName: "Loading",
+            lastName: "Name",
+            specializationName: "Specialization",
+            experienceYears: 5,
+            biography: "Loading biography text goes here...",
+            consultationFee: 100,
+            dateOfBirth: "2000-01-01",
+            gender: "Male",
+            isAppleToAppointment: true,
+            phoneNumber: "000000000",
+            email: "loading@loading.com",
+            doctorSchedules: [
+              DoctorScheduleModel(scheduleId: "1", doctorId: "dummy", dayOfWeek: 1, startTime: "10:00:00", endTime: "18:00:00", isAvailable: true),
+              DoctorScheduleModel(scheduleId: "2", doctorId: "dummy", dayOfWeek: 2, startTime: "10:00:00", endTime: "18:00:00", isAvailable: true),
+            ],
+          );
+          return Skeletonizer(
+            enabled: true,
+            child: Scaffold(
+              backgroundColor: context.scaffoldBg,
+              appBar: AppBar(
+                backgroundColor: primaryColor,
+                elevation: 0,
+                title: const Text("Doctor Details", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                iconTheme: const IconThemeData(color: Colors.white),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              body: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildIdentityCard(dummyDoctor, ""),
+                    const SizedBox(height: 25),
+                    _buildStatsRow(dummyDoctor),
+                    const SizedBox(height: 30),
+                    _buildSectionTitle("Biography"),
+                    _buildInfoCard(dummyDoctor.biography),
+                    const SizedBox(height: 25),
+                    _buildSectionTitle("Work Schedule"),
+                    _buildScheduleList(dummyDoctor.doctorSchedules),
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              ),
+            ),
+          );
         }
 
         if (snapshot.hasError || !snapshot.hasData) {

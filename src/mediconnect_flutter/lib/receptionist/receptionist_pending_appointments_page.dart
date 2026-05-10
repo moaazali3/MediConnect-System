@@ -8,6 +8,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/patient/screens/profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ReceptionistPendingAppointmentsPage extends StatefulWidget {
   const ReceptionistPendingAppointmentsPage({super.key});
@@ -518,10 +519,29 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                   const SizedBox(height: 10),
 
                   if (_isLoading)
-                    const Center(child: Padding(
-                      padding: EdgeInsets.all(40.0),
-                      child: CircularProgressIndicator(color: primaryColor),
-                    ))
+                    Skeletonizer(
+                      enabled: true,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: List.generate(4, (index) => _buildAppointmentCard(
+                            AppointmentModel(
+                              appointmentId: "dummy",
+                              doctorId: "dummy",
+                              patientId: "dummy",
+                              patientName: "Loading Patient Name",
+                              doctorName: "Loading Doctor Name",
+                              appointmentDate: "2024-01-01",
+                              startTime: "10:00",
+                              endTime: "10:30",
+                              status: "pending",
+                              dayOfWeek: "Monday",
+                              queueNumber: 1,
+                            ),
+                          )),
+                        ),
+                      ),
+                    )
                   else if (_errorMessage != null)
                     Center(child: Column(
                       children: [
@@ -567,7 +587,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Expanded(
             child: Text(
@@ -576,11 +596,19 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
               softWrap: true,
             ),
           ),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-            child: Text("${_allAppointments.length} Pending", style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.refresh, color: primaryColor),
+                onPressed: _fetchData,
+                tooltip: 'Refresh',
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Text("${_allAppointments.length} Pending", style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
         ],
       ),
@@ -769,7 +797,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                   const SizedBox(height: 10),
                   // Payment Status Badge
                   FutureBuilder<PaymentModel?>(
-                    future: _apiService.getPaymentByAppointment(app.appointmentId),
+                    future: app.appointmentId == "dummy" ? Future.value(null) : _apiService.getPaymentByAppointment(app.appointmentId),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const SizedBox(

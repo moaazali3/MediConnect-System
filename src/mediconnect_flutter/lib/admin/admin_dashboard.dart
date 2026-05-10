@@ -20,7 +20,7 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  int _currentIndex = 1;
+  int _currentIndex = 0;
   String _adminName = "Administrator";
 
   Key _analyticsKey = UniqueKey();
@@ -78,6 +78,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         onLogout: _signOut,
         onRefresh: _handleRefresh,
         isRoot: true,
+        showDarkModeToggle: _currentIndex == 0,
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),

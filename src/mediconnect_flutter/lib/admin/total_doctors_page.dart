@@ -4,6 +4,7 @@ import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class TotalDoctorsPage extends StatefulWidget {
   const TotalDoctorsPage({super.key});
@@ -89,7 +90,25 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
           _buildSearchBox(),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: primaryColor))
+                ? Skeletonizer(
+                    enabled: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: 8,
+                      itemBuilder: (context, index) => _buildDoctorCard(DoctorModel(
+                        id: "dummy",
+                        firstName: "Loading",
+                        lastName: "Name",
+                        specializationName: "Specialization",
+                        experienceYears: 5,
+                        biography: "",
+                        consultationFee: 100,
+                        dateOfBirth: "2000-01-01",
+                        gender: "Male",
+                        isAppleToAppointment: true,
+                      )),
+                    ),
+                  )
                 : RefreshIndicator(
                     onRefresh: _fetchAllDoctors,
                     color: primaryColor,

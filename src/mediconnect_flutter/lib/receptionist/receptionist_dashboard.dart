@@ -95,8 +95,8 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
           : CommonAppBar(
         pageName: pageTitle,
         userName: _receptionistName,
-        onLogout: _signOut,
         isRoot: true,
+        showDarkModeToggle: _currentIndex == 0,
       ),
       body: IndexedStack(
         index: _currentIndex,
@@ -140,6 +140,9 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
                 setState(() {
                   _currentIndex = index;
                 });
+                if (index == 0) {
+                  _fetchAndSetUserName();
+                }
               }
             },
             items: const [

@@ -14,6 +14,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onRefresh;
   final VoidCallback? onLogout;
   final bool isRoot;
+  final bool showDarkModeToggle;
 
   const CommonAppBar({
     super.key,
@@ -27,6 +28,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.onRefresh,
     this.onLogout,
     this.isRoot = false,
+    this.showDarkModeToggle = false,
   });
 
   @override
@@ -172,7 +174,7 @@ class _CommonAppBarState extends State<CommonAppBar> {
                 ),
               ),
               // ── Dark / Light mode toggle ──
-              _ThemeToggleButton(),
+              if (widget.showDarkModeToggle) _ThemeToggleButton(),
               if (widget.actions != null) ...widget.actions!,
               if (widget.onRefresh != null)
                 IconButton(

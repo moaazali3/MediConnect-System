@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/patient/screens/edit_patient_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/services/secure_storage.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:mediconnect/patient/screens/patient_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;
@@ -123,7 +125,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
         future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: primaryColor));
+            final dummyProfile = PatientProfileModel(
+              id: "dummy",
+              firstName: "Loading",
+              lastName: "Name",
+              email: "loading@loading.com",
+              phoneNumber: "0000000000",
+              bloodType: "O+",
+              dateOfBirth: "2000-01-01",
+              height: 170,
+              weight: 70,
+              emergencyContact: "0000000000",
+              gender: "Male",
+              address: "Loading address",
+            );
+            
+            return Skeletonizer(
+              enabled: true,
+              child: Column(
+                children: [
+                  if (!widget.readOnly) _buildFixedHeader(dummyProfile),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.readOnly) _buildReadOnlySimpleHeader(dummyProfile),
+                          if (widget.showMedicalHistory)
+                            SizedBox(
+                              width: double.infinity,
+                              height: 55,
+                              child: OutlinedButton.icon(
+                                onPressed: () {},
+                                icon: const Icon(Icons.history_rounded, color: primaryColor),
+                                label: const Text("View Medical History", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          if (widget.showMedicalHistory) const SizedBox(height: 30),
+                          _buildSectionTitle("Personal Information"),
+                          _buildProfileCard([
+                            _buildInfoRow(Icons.email_outlined, "Email", dummyProfile.email),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.phone_android_rounded, "Phone", dummyProfile.phoneNumber),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.location_on_outlined, "Address", dummyProfile.address ?? "No Address"),
+                          ]),
+                          const SizedBox(height: 25),
+                          _buildSectionTitle("Medical Background"),
+                          _buildProfileCard([
+                            _buildInfoRow(Icons.bloodtype_outlined, "Blood Type", dummyProfile.bloodType),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.cake_rounded, "Age", "20 Years"),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.height_rounded, "Height", "${dummyProfile.height} cm"),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.monitor_weight_outlined, "Weight", "${dummyProfile.weight} kg"),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.contact_emergency_rounded, "Emergency Contact", dummyProfile.emergencyContact),
+                          ]),
+                          const SizedBox(height: 40),
+                          if (!widget.readOnly) _buildActionButtons(context, "dummy"),
+                          const SizedBox(height: 30),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
           if (snapshot.hasError) {
             return Center(
@@ -409,11 +480,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: double.infinity,
           height: 55,
           child: OutlinedButton.icon(
-            onPressed: () {
+            onPressed: () async {
+              await SecureStorage.deleteAllData();
+              ApiService.setToken(null);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (!context.mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
+                (route) => false,
               );
             },
             icon: const Icon(Icons.power_settings_new_rounded),

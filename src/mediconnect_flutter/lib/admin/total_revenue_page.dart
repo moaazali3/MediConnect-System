@@ -4,6 +4,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 // --- كلاسات مساعدة لتنظيم الداتا في الشاشة ---
 class SpecRevenueData {
@@ -145,7 +146,20 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         onRefresh: _loadData,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
+          ? Skeletonizer(
+              enabled: true,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                children: [
+                  _buildTotalCard(),
+                  const SizedBox(height: 30),
+                  _buildSectionTitle("Revenue by Specialization"),
+                  const SizedBox(height: 15),
+                  ...List.generate(3, (index) => _buildSpecializationItem(SpecRevenueData(name: "Loading Specialization", totalRevenue: 1000))),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            )
           : RefreshIndicator(
         onRefresh: _loadData,
         color: primaryColor,

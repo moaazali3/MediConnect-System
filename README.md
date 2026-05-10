@@ -1,5 +1,10 @@
 # 🏥 MediConnect: Comprehensive Healthcare Management Platform
 
+![Flutter](https://img.shields.io/badge/Flutter-%5E3.10.7-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![.NET Core](https://img.shields.io/badge/.NET_Core-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL_Server-Latest-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey?style=for-the-badge)
+
 Welcome to the **MediConnect** ecosystem! This repository houses the complete source code for a modern, highly scalable, and full-featured healthcare platform designed to streamline hospital operations, patient-doctor interactions, and clinic administration. 
 
 The MediConnect system is built with a clear separation of concerns, divided into a **Flutter Mobile Application (Frontend)** and an **ASP.NET Core RESTful API (Backend)**.
@@ -8,6 +13,7 @@ The MediConnect system is built with a clear separation of concerns, divided int
 
 ## 📑 Table of Contents
 - [Overview](#-overview)
+- [App Previews & UI/UX](#-app-previews--uiux)
 - [Platform Modules & Features](#-platform-modules--features)
   - [1. Patient Portal](#1--patient-portal)
   - [2. Doctor Panel](#2--doctor-panel)
@@ -28,6 +34,16 @@ The MediConnect system is built with a clear separation of concerns, divided int
 ## 🌟 Overview
 
 MediConnect aims to digitize the traditional hospital appointment system. It provides distinct, tailor-made interfaces for different actors (Patients, Doctors, Receptionists, Admins) using **Role-Based Access Control (RBAC)**. The backend handles complex business logic, database migrations, and email notifications, while the frontend delivers a premium, fast, and secure mobile experience.
+
+---
+
+## 📱 App Previews & UI/UX
+
+*(Add screenshots of your application here to showcase the beautiful UI/UX!)*
+
+| Patient Portal | Doctor Dashboard | QR Scanner | Admin Analytics |
+|:---:|:---:|:---:|:---:|
+| <img src="https://via.placeholder.com/250x500.png?text=Patient+App" width="200"/> | <img src="https://via.placeholder.com/250x500.png?text=Doctor+Panel" width="200"/> | <img src="https://via.placeholder.com/250x500.png?text=QR+Scanner" width="200"/> | <img src="https://via.placeholder.com/250x500.png?text=Analytics" width="200"/> |
 
 ---
 
@@ -109,10 +125,10 @@ The mobile client focuses on responsiveness, security, and offline awareness:
 
 ### 📱 Frontend (Mobile)
 * **Framework:** Flutter (Dart)
-* **Networking:** `http` with custom interceptors.
+* **Networking:** `http` with custom interceptors & `jwt_decoder` for token management.
 * **Storage:** `flutter_secure_storage` (Encrypted JWTs) & `shared_preferences` (Theme states).
-* **Hardware Integrations:** `mobile_scanner` for QR code validation.
-* **UI/UX:** Custom theme extensions and `shimmer` for skeleton loading.
+* **Hardware Integrations:** `mobile_scanner` & `qr_flutter` for robust QR code validation & generation.
+* **UI/UX & Media:** Custom theme extensions, `shimmer` & `skeletonizer` for beautiful loading states, and `image_cropper` for profile picture adjustments.
 
 ### 💻 Backend (Server)
 * **Framework:** ASP.NET Core Web API (.NET 10.0)
@@ -189,10 +205,10 @@ MediConnect utilizes a highly secure, background-managed authentication system:
 
 MediConnect is proudly built by a multi-disciplinary team:
 
-**Frontend Development (Flutter Mobile Client):**
-* Moaaz Ali
-* Mustafa Amr
-* Ahmed Gohar
+**Mobile Client (Flutter) & Systems Integration:**
+* **Moaaz Ali** *(API Integration & Core Logic)*
+* **Mustafa Amr** *(UI/UX & Flutter Implementation)*
+* **Ahmed Gohar** *(UI/UX & Flutter Implementation)*
 
 **Backend Architecture & API (.NET Core):**
-* Youssef Ahmed
+* **Youssef Ahmed**

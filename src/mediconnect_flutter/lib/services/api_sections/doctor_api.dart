@@ -188,7 +188,7 @@ mixin DoctorApi {
         'ngrok-skip-browser-warning': 'true',
       });
       request.files.add(await http_original.MultipartFile.fromPath('File', filePath));
-      var streamedResponse = await request.send();
+      var streamedResponse = await parent.client.send(request);
       var response = await http_original.Response.fromStream(streamedResponse);
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
@@ -211,7 +211,7 @@ mixin DoctorApi {
         'ngrok-skip-browser-warning': 'true',
       });
       request.files.add(await http_original.MultipartFile.fromPath('File', filePath));
-      var streamedResponse = await request.send();
+      var streamedResponse = await parent.client.send(request);
       var response = await http_original.Response.fromStream(streamedResponse);
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
