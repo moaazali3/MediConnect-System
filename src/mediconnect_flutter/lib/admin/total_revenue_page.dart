@@ -314,12 +314,12 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2340),
+              color: primaryColor.withOpacity(context.isDark ? 0.2 : 0.1),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.category_rounded,
-              color: Color(0xFF3B7DFF),
+              color: primaryColor,
               size: 26,
             ),
           ),
