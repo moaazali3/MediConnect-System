@@ -13,7 +13,6 @@ The MediConnect system is built with a clear separation of concerns, divided int
 
 ## 📑 Table of Contents
 - [Overview](#-overview)
-- [App Previews & UI/UX](#-app-previews--uiux)
 - [Platform Modules & Features](#-platform-modules--features)
   - [1. Patient Portal](#1--patient-portal)
   - [2. Doctor Panel](#2--doctor-panel)
@@ -34,16 +33,6 @@ The MediConnect system is built with a clear separation of concerns, divided int
 ## 🌟 Overview
 
 MediConnect aims to digitize the traditional hospital appointment system. It provides distinct, tailor-made interfaces for different actors (Patients, Doctors, Receptionists, Admins) using **Role-Based Access Control (RBAC)**. The backend handles complex business logic, database migrations, and email notifications, while the frontend delivers a premium, fast, and secure mobile experience.
-
----
-
-## 📱 App Previews & UI/UX
-
-*(Add screenshots of your application here to showcase the beautiful UI/UX!)*
-
-| Patient Portal | Doctor Dashboard | QR Scanner | Admin Analytics |
-|:---:|:---:|:---:|:---:|
-| <img src="https://via.placeholder.com/250x500.png?text=Patient+App" width="200"/> | <img src="https://via.placeholder.com/250x500.png?text=Doctor+Panel" width="200"/> | <img src="https://via.placeholder.com/250x500.png?text=QR+Scanner" width="200"/> | <img src="https://via.placeholder.com/250x500.png?text=Analytics" width="200"/> |
 
 ---
 
