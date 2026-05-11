@@ -18,7 +18,7 @@ namespace Hospital.API.Controllers
         }
 
         [HttpGet("patient/{patientId}")]
-        [Authorize(Roles = Role.Patient)]
+    
         public async Task<IActionResult> GetAppointmentsByPatientId(string patientId)
         {
             try

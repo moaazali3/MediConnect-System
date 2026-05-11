@@ -163,10 +163,10 @@ mixin AppointmentApi {
     final ApiService parent = this as ApiService;
     
     try {
-      // Fetch records and appointments in parallel; getDoctorNames is optional enrichment
+      // Fetch records and appointments in parallel; getAllDoctors is used for enrichment
       final recordResFuture = http.get(Uri.parse('${parent.baseUrl}/MedicalRecord/patient/$patientId'), headers: parent._headers);
       final apptResFuture = http.get(Uri.parse('${parent.baseUrl}/Appointment/patient/$patientId'), headers: parent._headers);
-      final doctorNamesFuture = parent.getDoctorNames().catchError((_) => <Map<String, dynamic>>[]);
+      final allDoctorsFuture = parent.getAllDoctors().catchError((_) => <DoctorModel>[]);
 
       final recordRes = await recordResFuture;
 
@@ -180,10 +180,10 @@ mixin AppointmentApi {
 
       if (records.isEmpty) return records;
 
-      // Try to enrich with appointments — gracefully skip if not accessible (e.g. doctor role)
+      // Try to enrich with appointments
       try {
         final apptRes = await apptResFuture;
-        final doctorNamesList = await doctorNamesFuture;
+        final allDoctorsList = await allDoctorsFuture;
 
         if (apptRes.statusCode == 200) {
           List<dynamic> apptBody = jsonDecode(apptRes.body);
@@ -195,12 +195,17 @@ mixin AppointmentApi {
 
           // Name to ID lookup for fallback
           Map<String, String> nameToIdMap = {};
-          for (var doc in doctorNamesList) {
-            String rawName = (doc['name'] ?? doc['fullName'] ?? doc['firstName'] ?? '').toString().toLowerCase();
-            String cleanName = rawName.replaceAll(RegExp(r'^dr\.?\s*', caseSensitive: false), '').trim();
-            String id = (doc['id'] ?? doc['doctorId'] ?? '').toString();
-            if (cleanName.isNotEmpty && id.isNotEmpty) {
-              nameToIdMap[cleanName] = id;
+          for (var doc in allDoctorsList) {
+
+            String cleanFirstName = doc.firstName.toLowerCase().trim();
+            String cleanLastName = doc.lastName.toLowerCase().trim();
+            String fullName = "$cleanFirstName $cleanLastName";
+            if (doc.id.isNotEmpty) {
+              nameToIdMap[fullName] = doc.id;
+              // Also map individual names as fallback
+
+              if (cleanFirstName.isNotEmpty) nameToIdMap[cleanFirstName] = doc.id;
+              print(nameToIdMap);
             }
           }
 
@@ -228,12 +233,14 @@ mixin AppointmentApi {
           await Future.wait(resolvedDoctorIds.map((id) async {
             try {
               final details = await parent.getDoctorDetails(id, null);
+
               doctorCache[id] = details;
             } catch (_) {}
           }));
 
           // 3. Map details back to records
           for (var record in records) {
+            print(record.doctorName.toString());
             if (record.doctorId.isNotEmpty && doctorCache.containsKey(record.doctorId)) {
               final doc = doctorCache[record.doctorId]!;
               record.doctorName = "Dr. ${doc.firstName} ${doc.lastName}";
@@ -247,9 +254,7 @@ mixin AppointmentApi {
           }
         }
       } catch (enrichmentError) {
-        // Enrichment failed (e.g. doctor role can't access patient appointments).
-        // Return records as-is without enrichment.
-        debugPrint("[getPatientMedicalHistory] Enrichment skipped: $enrichmentError");
+        debugPrint("[getPatientMedicalHistory] Enrichment failed: $enrichmentError");
       }
 
       return records;

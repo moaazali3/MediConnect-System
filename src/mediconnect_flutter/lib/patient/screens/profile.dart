@@ -41,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _loadProfile() {
     final String targetId = (widget.userId == null || widget.userId!.isEmpty) ? "1" : widget.userId!;
-    _profileFuture = _apiService.getPatientProfile(targetId);
+      _profileFuture = _apiService.getPatientProfile(targetId);
   }
 
   Future<void> _loadUserData() async {
