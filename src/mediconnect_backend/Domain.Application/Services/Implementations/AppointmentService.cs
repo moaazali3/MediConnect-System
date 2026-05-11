@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Hospital.Application.DTOs.Appointment;
 using Hospital.Application.Services.Interfaces;
 using Hospital.Domain.Entities;
@@ -25,6 +25,9 @@ namespace Hospital.Application.Services.Implementations
             if (!result.IsValid)
                 throw new Exception(result.ToString(","));
 
+            if (model.AppointmentDate < DateOnly.FromDateTime(DateTime.Now))
+                throw new Exception("Cannot book an appointment in the past.");
+
             // Parse DayOfWeek
             var parsedDay = Enum.Parse<DayOfWeek>(model.DayOfWeek);
 
@@ -48,7 +51,7 @@ namespace Hospital.Application.Services.Implementations
                     selector: x => x.StartTime,
                     filter: x => x.DoctorId == model.DoctorId &&
                                  x.AppointmentDate == model.AppointmentDate &&
-                                 x.Status != Status.Completed
+                                 x.Status == Status.Pending
                 );
 
             var lastQueueNumber = await _unitOfWork.Appointments
@@ -68,17 +71,31 @@ namespace Hospital.Application.Services.Implementations
             };
 
             // Generate time slot
+            var baseTime = doctorScheduleTime.StartTime;
+            var currentLocalTime = DateTime.UtcNow.AddHours(3);
+            if (model.AppointmentDate == DateOnly.FromDateTime(currentLocalTime))
+            {
+                var currentTimeWithBuffer = TimeOnly.FromDateTime(currentLocalTime).Add(TimeSpan.FromMinutes(30));
+                if (baseTime < currentTimeWithBuffer)
+                {
+                    // Calculate next 30-min block from buffered time
+                    int remainder = currentTimeWithBuffer.Minute % 30;
+                    int minutesToAdd = remainder == 0 ? 0 : 30 - remainder;
+                    baseTime = currentTimeWithBuffer.Add(TimeSpan.FromMinutes(minutesToAdd));
+                }
+            }
+
             if (!appointmentStartTimes.Any())
             {
-                appointment.StartTime = doctorScheduleTime.StartTime;
+                appointment.StartTime = baseTime;
             }
             else
             {
-                var lastStartTime = appointmentStartTimes
-                    .OrderBy(t => t)
-                    .Last();
-
-                appointment.StartTime = lastStartTime.Add(TimeSpan.FromMinutes(30));
+                var lastStartTime = appointmentStartTimes.Max();
+                var nextSlot = lastStartTime.Add(TimeSpan.FromMinutes(30));
+                
+                // If the next slot from existing appointments is somehow in the past, use baseTime instead
+                appointment.StartTime = nextSlot > baseTime ? nextSlot : baseTime;
             }
 
             appointment.EndTime = appointment.StartTime.Add(TimeSpan.FromMinutes(30));
@@ -261,12 +278,63 @@ namespace Hospital.Application.Services.Implementations
             return appointments;
         }
 
-        public async Task<int> ExpectedNumber(string doctorId, DateTime appointmentDate)
+        public async Task<ExpectedAppointmentInfoDto> ExpectedNumber(string doctorId, DateTime appointmentDate)
         {
-            // Reuse repository helper that already returns the last queue number for a given doctor and date.
-            // This avoids trying to call LINQ Where/Max on the repository interface which doesn't expose IEnumerable/IQueryable.
             var lastQueueNumber = await _unitOfWork.Appointments.GetLastQueueNumberAsync(doctorId, appointmentDate);
-            return lastQueueNumber + 1;
+            var queueNumber = lastQueueNumber + 1;
+
+            var parsedDay = appointmentDate.DayOfWeek;
+            var doctorScheduleTime = await _unitOfWork.DoctorSchedules
+                .GetAsync(
+                    selector: x => new { x.StartTime, x.EndTime },
+                    filter: x => x.DoctorId == doctorId && x.DayOfWeek == parsedDay
+                );
+
+            if (doctorScheduleTime == null)
+                return new ExpectedAppointmentInfoDto { ExpectedNumber = queueNumber, ExpectedTime = "N/A" };
+
+            var appointmentStartTimes = await _unitOfWork.Appointments
+                .GetAllAsync(
+                    selector: x => x.StartTime,
+                    filter: x => x.DoctorId == doctorId &&
+                                 x.AppointmentDate == DateOnly.FromDateTime(appointmentDate) &&
+                                 x.Status == Status.Pending
+                );
+
+            var baseTime = doctorScheduleTime.StartTime;
+            var currentLocalTime = DateTime.UtcNow.AddHours(3);
+            if (DateOnly.FromDateTime(appointmentDate) == DateOnly.FromDateTime(currentLocalTime))
+            {
+                var currentTimeWithBuffer = TimeOnly.FromDateTime(currentLocalTime).Add(TimeSpan.FromMinutes(30));
+                if (baseTime < currentTimeWithBuffer)
+                {
+                    int remainder = currentTimeWithBuffer.Minute % 30;
+                    int minutesToAdd = remainder == 0 ? 0 : 30 - remainder;
+                    baseTime = currentTimeWithBuffer.Add(TimeSpan.FromMinutes(minutesToAdd));
+                }
+            }
+
+            TimeOnly expectedStartTime;
+            if (!appointmentStartTimes.Any())
+            {
+                expectedStartTime = baseTime;
+            }
+            else
+            {
+                var lastStartTime = appointmentStartTimes.Max();
+                var nextSlot = lastStartTime.Add(TimeSpan.FromMinutes(30));
+                expectedStartTime = nextSlot > baseTime ? nextSlot : baseTime;
+            }
+
+            // Convert to HH:mm format
+            string expectedTimeString = new DateTime(appointmentDate.Year, appointmentDate.Month, appointmentDate.Day, 
+                                            expectedStartTime.Hour, expectedStartTime.Minute, 0).ToString("hh:mm tt");
+
+            return new ExpectedAppointmentInfoDto 
+            { 
+                ExpectedNumber = queueNumber, 
+                ExpectedTime = expectedTimeString 
+            };
         }
 
         public async Task<List<GetAllAppointmentsDto>> GetAllAppointments()

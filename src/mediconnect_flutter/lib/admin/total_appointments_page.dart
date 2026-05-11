@@ -330,7 +330,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(appt.patientName, style: TextStyle(fontWeight: FontWeight.bold, color: context.onSurface)),
-                              Text("${appt.appointmentDate.split('T')[0]} | ${appt.startTime}", style: TextStyle(color: context.subText, fontSize: 12)),
+                              Text("${appt.appointmentDate.split('T')[0]} | ${appt.startTime.substring(0, 5)}", style: TextStyle(color: context.subText, fontSize: 12)),
                             ],
                           ),
                         ),

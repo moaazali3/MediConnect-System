@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:intl/intl.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -102,8 +103,13 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
   void _showAppointmentDetails(Map<String, dynamic> data) {
     final String appointmentId = data['appointmentId'] ?? "N/A";
+    final String dateString = data['date'] ?? "N/A";
     final bool alreadyPaid =
         (data['paymentStatus'] ?? '').toString().toLowerCase() == 'completed';
+
+    // Verify if the appointment is for today
+    final String todayDateString = DateFormat('yMMMd').format(DateTime.now());
+    final bool isToday = (dateString == "N/A" || dateString == todayDateString);
 
     showModalBottomSheet(
       context: context,
@@ -135,117 +141,62 @@ class _QRScannerPageState extends State<QRScannerPage> {
                   _buildDetailRow("Date", data['date'] ?? "N/A"),
                   _buildDetailRow("Queue", "#${data['queue'] ?? 'N/A'}"),
 
-                  // ── Payment section ──────────────────────────────
                   const Divider(height: 25),
-                  if (alreadyPaid)
-                    _buildPaymentRow(
-                      method: data['paymentMethod'] ?? "N/A",
-                      status: data['paymentStatus'] ?? "N/A",
-                    )
-                  else
-                    StatefulBuilder(
-                      builder: (context, setInner) {
-                        selectedMethod ??= 'Cash';
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Collect Payment",
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: ['Cash', 'Card', 'Wallet'].map((method) {
-                                final isSelected = selectedMethod == method;
-                                return GestureDetector(
-                                  onTap: () => setInner(() => selectedMethod = method),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 10),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? primaryColor
-                                          : context.filterChipBg,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? primaryColor
-                                            : context.filterChipBorder,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      method,
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : context.onSurface,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+                  _buildPaymentRow(
+                    method: data['paymentMethod'] ?? "N/A",
+                    status: data['paymentStatus'] ?? "N/A",
+                  ),
 
                   const SizedBox(height: 25),
 
-                  if (!alreadyPaid)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.payment_rounded, size: 18),
-                        label: const Text(
-                          "COLLECT PAYMENT & CONFIRM",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          await _collectPayment(
-                            appointmentId: appointmentId,
-                            paymentMethod: selectedMethod ?? 'Cash',
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15)),
-                        ),
+                  if (!isToday)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.red.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_rounded, color: Colors.red.shade700),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              "WARNING: This appointment is scheduled for $dateString, not today. You cannot confirm attendance.",
+                              style: TextStyle(color: Colors.red.shade900, fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  if (alreadyPaid)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.check_circle_rounded, size: 18),
-                        label: const Text(
-                          "CONFIRM ATTENDANCE",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          _confirmAttendance(appointmentId);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15)),
-                        ),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.check_circle_rounded, size: 18),
+                      label: const Text(
+                        "CONFIRM ATTENDANCE",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: isToday
+                          ? () async {
+                              Navigator.pop(context);
+                              _confirmAttendance(appointmentId);
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        disabledForegroundColor: Colors.grey.shade600,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15)),
                       ),
                     ),
+                  ),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
@@ -294,46 +245,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
     }
   }
 
-  Future<void> _collectPayment({
-    required String appointmentId,
-    required String paymentMethod,
-  }) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: primaryColor),
-      ),
-    );
 
-    try {
-      // 1. Create payment  POST /api/Payment/{appointmentId}
-      final paymentOk = await _apiService.createPaymentByAppointment(
-        appointmentId: appointmentId,
-        paymentMethod: paymentMethod,
-      );
-
-      // 2. Mark appointment as completed
-      final attendanceOk =
-          await _apiService.completeAppointmentStatus(appointmentId);
-
-      if (!mounted) return;
-      Navigator.pop(context); // close loading
-
-      if (paymentOk && attendanceOk) {
-        _showSuccess(
-            "Payment collected ($paymentMethod) & appointment confirmed!");
-      } else if (paymentOk) {
-        _showSuccess("Payment collected. Attendance confirmation failed.");
-      } else {
-        _showError("Payment failed. Please try again.");
-      }
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pop(context);
-      _showError("Error: $e");
-    }
-  }
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(

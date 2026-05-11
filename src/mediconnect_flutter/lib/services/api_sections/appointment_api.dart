@@ -89,15 +89,17 @@ mixin AppointmentApi {
     throw "Error fetching receptionist appointments";
   }
 
-  Future<int> getExpectedNumber(String doctorId, String appointmentDate) async {
+  Future<Map<String, dynamic>> getExpectedNumber(String doctorId, String appointmentDate) async {
     final ApiService parent = this as ApiService;
     final response = await http.get(
       Uri.parse('${parent.baseUrl}/Appointment/expected-number?doctorId=$doctorId&appointmentDate=$appointmentDate'),
       headers: parent._headers,
     );
 
+    debugPrint("EXPECTED NUMBER SERVER RESPONSE: ${response.body}");
+
     if (response.statusCode == 200) {
-      return int.tryParse(response.body) ?? 0;
+      return jsonDecode(response.body);
     } else {
       final body = jsonDecode(response.body);
       String errorMessage = body['errors']?.toString() ?? "Failed to fetch expected number";
@@ -112,6 +114,8 @@ mixin AppointmentApi {
       headers: parent._headers,
     );
     
+    debugPrint("[completeAppointmentStatus] Server Response: ${response.body}");
+
     if (response.statusCode == 200) {
       return true;
     } else {
@@ -128,6 +132,8 @@ mixin AppointmentApi {
       headers: parent._headers,
     );
     
+    debugPrint("[cancelAppointmentStatus] Server Response: ${response.body}");
+
     if (response.statusCode == 200) {
       return true;
     } else {

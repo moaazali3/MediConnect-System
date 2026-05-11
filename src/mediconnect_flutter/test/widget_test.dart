@@ -5,7 +5,7 @@ import 'package:mediconnect/auth/screens/login_screen.dart';
 void main() {
   testWidgets('Login screen loads test', (WidgetTester tester) async {
     // Pass LoginScreen as the homeWidget to fix the constructor error
-    await tester.pumpWidget(const MyApp(homeWidget: LoginScreen()));
+    await tester.pumpWidget(const MyApp());
 
     // Verify that the login screen elements are present
     expect(find.text('Welcome Back'), findsOneWidget);
