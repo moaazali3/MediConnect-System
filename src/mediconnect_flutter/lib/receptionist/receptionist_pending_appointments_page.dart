@@ -530,6 +530,11 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
   }
 
   Widget _buildAppointmentCard(AppointmentModel app) {
+    DateTime apptDateRaw = DateTime.parse(app.appointmentDate.split('T')[0]);
+    DateTime today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    DateTime apptDate = DateTime(apptDateRaw.year, apptDateRaw.month, apptDateRaw.day);
+    bool isValidDate = !apptDate.isAfter(today); // True if today or in the past
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -668,9 +673,21 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: _isProcessing ? null : () => _showCompletionSheet(app),
+                          onPressed: _isProcessing ? null : () {
+                            if (!isValidDate) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Cannot complete an appointment that is scheduled for the future!"),
+                                  backgroundColor: Colors.red,
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                              return;
+                            }
+                            _showCompletionSheet(app);
+                          },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: isValidDate ? Colors.green : Colors.grey.shade400,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             elevation: 0,

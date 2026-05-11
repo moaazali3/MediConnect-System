@@ -107,9 +107,18 @@ class _QRScannerPageState extends State<QRScannerPage> {
     final bool alreadyPaid =
         (data['paymentStatus'] ?? '').toString().toLowerCase() == 'completed';
 
-    // Verify if the appointment is for today
+    // Verify if the appointment is for today or the past
     final String todayDateString = DateFormat('yMMMd').format(DateTime.now());
-    final bool isToday = (dateString == "N/A" || dateString == todayDateString);
+    bool isValidDate = true;
+    if (dateString != "N/A") {
+      try {
+        DateTime apptDate = DateFormat('yMMMd').parse(dateString);
+        DateTime today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+        isValidDate = !apptDate.isAfter(today);
+      } catch (e) {
+        isValidDate = (dateString == todayDateString);
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -149,7 +158,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
                   const SizedBox(height: 25),
 
-                  if (!isToday)
+                  if (!isValidDate)
                     Container(
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 20),
@@ -164,7 +173,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              "WARNING: This appointment is scheduled for $dateString, not today. You cannot confirm attendance.",
+                              "WARNING: This appointment is scheduled for $dateString, not today. You cannot confirm attendance for future appointments.",
                               style: TextStyle(color: Colors.red.shade900, fontSize: 13, fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -178,23 +187,23 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.check_circle_rounded, size: 18),
                       label: const Text(
-                        "CONFIRM ATTENDANCE",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        "Confirm Attendance",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      onPressed: isToday
-                          ? () async {
-                              Navigator.pop(context);
-                              _confirmAttendance(appointmentId);
-                            }
-                          : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
+                        backgroundColor: isValidDate ? primaryColor : Colors.grey.shade400,
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey.shade300,
                         disabledForegroundColor: Colors.grey.shade600,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15)),
                       ),
+                      onPressed: isValidDate
+                          ? () async {
+                              Navigator.pop(context);
+                              _confirmAttendance(appointmentId);
+                            }
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 10),

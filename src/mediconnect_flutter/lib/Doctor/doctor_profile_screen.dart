@@ -180,6 +180,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         _buildDivider(),
                         _buildInfoRow(Icons.calendar_month_rounded, "Age", "${_calculateAge(doctor.dateOfBirth)} Years"),
                         _buildDivider(),
+                        _buildInfoRow(Icons.wc_rounded, "Gender", doctor.gender.isNotEmpty ? doctor.gender : "N/A"),
+                        _buildDivider(),
                         _buildInfoRow(Icons.location_on_outlined, "Clinic Address", doctor.address ?? "No Address"),
                       ]),
 
