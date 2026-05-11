@@ -34,6 +34,10 @@ The MediConnect system is built with a clear separation of concerns, divided int
 
 MediConnect aims to digitize the traditional hospital appointment system. It provides distinct, tailor-made interfaces for different actors (Patients, Doctors, Receptionists, Admins) using **Role-Based Access Control (RBAC)**. The backend handles complex business logic, database migrations, and email notifications, while the frontend delivers a premium, fast, and secure mobile experience.
 
+The project was initially developed using two separate repositories — one dedicated to the ASP.NET Core back-end API and another for the Flutter mobile application. After completing development and stabilization, both repositories were unified into a single integrated system for streamlined deployment and maintenance.
+Back-End Repository: (https://github.com/YousefX04/mediconnect-system)
+Flutter Repository: (https://github.com/moaazali3/mediconnect)
+
 ---
 
 ## ✨ Platform Modules & Features
